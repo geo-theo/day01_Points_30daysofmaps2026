@@ -1,0 +1,5 @@
+id,address,geocode_longitude,geocode_latitude,geocode_status,geocode_score,geocode_label,geocode_type,geocode_citycode,geocode_postcode,geocode_id,geocode_error
+1,"36 boulevard Garibaldi, 75015 Paris France",2.305116,48.846662,matched,0.8213118181818181,36 Boulevard Garibaldi 75015 Paris,housenumber,75115,75015,75115_3957_00036,
+2,"14 rue Ferdinand Flocon, 75018 Paris France",2.346073,48.891625,matched,0.8165711751662971,14 Rue Ferdinand Flocon 75018 Paris,housenumber,75118,75018,75118_3587_00014,
+3,"22 rue Beranger, 75003 Paris France",2.363535,48.866528,matched,0.7735843526170798,22 Rue Béranger 75003 Paris,housenumber,75103,75003,75103_0871_00022,
+4,,,,missing_address,,,,,,,
