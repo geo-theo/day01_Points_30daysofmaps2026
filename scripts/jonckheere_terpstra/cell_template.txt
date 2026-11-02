@@ -1,0 +1,67 @@
+// Cell 05 — paste this entire file into one Observable JavaScript or TypeScript cell.
+// Attach restaurants_paris.geojson to the notebook before running.
+import * as cell05Plot from "npm:@observablehq/plot";
+import * as cell05Htl from "npm:htl";
+
+/* INSERT JT CORE */
+
+const cell05Core = createJTCore();
+const cell05Data = cell05Core.prepare(await FileAttachment("restaurants_paris.geojson").json());
+const cell05Groups = cell05Core.bands.map((_, i) => cell05Data.rows.filter(r => r.band === i).map(r => r.rating));
+const cell05Descriptions = cell05Core.describe(cell05Groups);
+const cell05Output = cell05Htl.html`<section><p>Running 9,999 permutations for each analysis…</p></section>`;
+display(cell05Output);
+
+// Run the expensive permutation calculations in a worker, with fixed seeds.
+const cell05WorkerSource = `const createJTCore = ${createJTCore.toString()};
+self.onmessage = ({data}) => { try { const core = createJTCore();
+  self.postMessage({full: core.analyze(data, 20261102, 9999), beyond: core.analyze(data.slice(2), 20261103, 9999)});
+} catch (error) { self.postMessage({error: String(error)}); } };`;
+const cell05WorkerUrl = URL.createObjectURL(new Blob([cell05WorkerSource], {type: "text/javascript"}));
+const cell05Worker = new Worker(cell05WorkerUrl);
+invalidation.then(() => { cell05Worker.terminate(); URL.revokeObjectURL(cell05WorkerUrl); });
+cell05Worker.onerror = event => { cell05Output.replaceChildren(cell05Htl.html`<p>Calculation failed: ${event.message}</p>`); cell05Worker.terminate(); URL.revokeObjectURL(cell05WorkerUrl); };
+cell05Worker.onmessage = ({data}) => {
+  cell05Worker.terminate(); URL.revokeObjectURL(cell05WorkerUrl);
+  if (data.error) { cell05Output.replaceChildren(cell05Htl.html`<p>Calculation failed: ${data.error}</p>`); return; }
+  const fmt = x => Number.isFinite(x) ? x.toFixed(4) : "—";
+  const countWarnings = cell05Data.countDiscrepancies.map(d => `${d.band}: ${d.actual} found, ${d.expected} expected`).join("; ");
+  const full = data.full, beyond = data.beyond;
+  const summaryRows = [["Restaurants", full.n, beyond.n], ["JT statistic", full.observed, beyond.observed],
+    ["Expected JT under random labeling", full.expected, beyond.expected], ["Cross-band pairs", full.pairs, beyond.pairs],
+    ["P: normalized favorable comparisons", fmt(full.probability), fmt(beyond.probability)],
+    ["D: directional dominance", fmt(full.dominance), fmt(beyond.dominance)],
+    ["One-sided permutation p-value", fmt(full.p), fmt(beyond.p)],
+    ["Significant at α = 0.05", full.p < .05 ? "Yes" : "No", beyond.p < .05 ? "Yes" : "No"]];
+  const table = cell05Htl.html`<table style="border-collapse:collapse;width:100%;font:13px system-ui"><thead><tr><th>Statistic</th><th>0–1,500 m (primary)</th><th>500–1,500 m (exploratory)</th></tr></thead><tbody>${summaryRows.map(row => cell05Htl.html`<tr>${row.map(v => cell05Htl.html`<td style="border-top:1px solid #ddd;padding:6px">${v}</td>`)}</tr>`)}</tbody></table>`;
+  const descTable = cell05Htl.html`<table style="border-collapse:collapse;font:13px system-ui"><thead><tr><th>Band</th><th>n</th><th>Mean</th><th>Median</th><th>Q1</th><th>Q3</th></tr></thead><tbody>${cell05Descriptions.map(d => cell05Htl.html`<tr>${[d.band,d.n,fmt(d.mean),fmt(d.median),fmt(d.q1),fmt(d.q3)].map(v => cell05Htl.html`<td style="border-top:1px solid #ddd;padding:6px 12px">${v}</td>`)}</tr>`)}</tbody></table>`;
+  const xLabel = i => cell05Core.bands[Math.round(i)] ?? "";
+  // Jitter is deterministic and used only to separate marks, never in the analysis.
+  const jitter = cell05Core.rng(1024);
+  const points = cell05Data.rows.map(r => ({...r, x: r.band + ((jitter()/4294967296) - .5)*.28}));
+  const box = cell05Plot.plot({width: 820, height: 380, marginBottom: 55, x: {domain: [-.5,5.5], ticks: [0,1,2,3,4,5], tickFormat: xLabel, label: "Distance band (m)"}, y: {domain:[1,5], label:"Rating"}, marks:[
+    cell05Plot.dot(points, {x:"x",y:"rating",r:2,opacity:.25,fill:"#356c8d"}),
+    cell05Plot.boxY(cell05Data.rows, {x:"band",y:"rating",fill:"#9ecae1",fillOpacity:.45,stroke:"#1b4a65",inset: 26}),
+    cell05Plot.text(cell05Descriptions.map((d,i)=>({...d,x:i})),{x:"x",y:1.1,text:d=>`n=${d.n}`,fontSize:11})]});
+  const lines = cell05Descriptions.flatMap((d,i) => [{band:i, value:d.mean, type:"Mean"},{band:i,value:d.median,type:"Median"}]);
+  const means = cell05Plot.plot({width:820,height:330,marginBottom:55,x:{domain:[-.5,5.5],ticks:[0,1,2,3,4,5],tickFormat:xLabel,label:"Distance band (m)"},y:{domain:[1,5],label:"Rating"},color:{legend:true,domain:["Mean","Median"],range:["#b34c26","#245b82"]},marks:[
+    cell05Plot.lineY(lines,{x:"band",y:"value",stroke:"type"}),cell05Plot.dot(lines,{x:"band",y:"value",fill:"type",r:4}),
+    cell05Plot.text(cell05Descriptions.map((d,i)=>({...d,x:i})),{x:"x",y:1.12,text:d=>`n=${d.n}`,fontSize:11})]});
+  function histogram(result) {
+    const values = result.distribution, min = Math.min(...values, result.observed), max = Math.max(...values, result.observed), width = Math.max(1, (max-min)/35);
+    const bins = Array.from({length:35},(_,i)=>({lo:min+i*width,hi:min+(i+1)*width,lower:0,upper:0}));
+    for (const v of values) { const b = bins[Math.min(34, Math.floor((v-min)/width))]; if (v >= result.observed) b.upper++; else b.lower++; }
+    const parts = bins.flatMap(b => [{lo:b.lo,hi:b.hi,from:0,to:b.lower,tail:"Below observed"},{lo:b.lo,hi:b.hi,from:b.lower,to:b.lower+b.upper,tail:"At or above observed"}]);
+    return cell05Plot.plot({width:820,height:280,x:{label:"JT statistic"},y:{label:"Permutation frequency"},color:{legend:true,domain:["Below observed","At or above observed"],range:["#8da9b8","#c34e36"]},marks:[cell05Plot.rectY(parts,{x1:"lo",x2:"hi",y1:"from",y2:"to",fill:"tail"}),cell05Plot.ruleX([result.observed],{stroke:"#a31e18",strokeWidth:2})]});
+  }
+  const interpret = (r, name) => `${name}: ${r.p < .05 ? "The test provides evidence" : "The test does not provide sufficient evidence"} of an increasing ordered trend (p = ${fmt(r.p)}; P = ${fmt(r.probability)}, D = ${fmt(r.dominance)}).`;
+  cell05Output.replaceChildren(cell05Htl.html`<div style="font:14px system-ui;line-height:1.5"><h2>Jonckheere–Terpstra test: restaurant ratings</h2>
+    <p>${cell05Data.mismatches.length ? `WARNING: ${cell05Data.mismatches.length} distance-band mismatches; interpret results with caution. First examples: ${JSON.stringify(cell05Data.mismatches.slice(0,5))}` : "All in-range distance bands agree with numeric distances."} ${countWarnings ? `WARNING: count discrepancies — ${countWarnings}.` : "All six expected rated counts match."} In-range missing ratings: ${cell05Data.missingRating}; invalid or missing distances: ${cell05Data.missingDistance}.</p>
+    ${table}<p>${interpret(full,"All bands")} ${interpret(beyond,"Beyond 500 m")} The second analysis is exploratory; a nonsignificant result does not prove the relationship disappears. Comparing these results does not directly test whether the effects differ. Confidence intervals are not calculated.</p>
+    <p>P counts tied cross-band comparisons as half; D = 2P − 1. These are normalized pairwise measures, not correlations. The test concerns ordered differences, not necessarily a linear or continuous increase.</p>
+    <h3>Band summaries</h3>${descTable}<h3>Rating distributions</h3>${box}<h3>Mean and median ratings</h3>${means}
+    <h3>Permutation distribution: all bands</h3><p>Observed JT = ${full.observed}; upper-tail p = ${fmt(full.p)}. The red line marks observed JT; red bars count permuted values at or above it.</p>${histogram(full)}
+    <h3>Permutation distribution: beyond 500 m</h3><p>Observed JT = ${beyond.observed}; upper-tail p = ${fmt(beyond.p)}. The red line marks observed JT; red bars count permuted values at or above it.</p>${histogram(beyond)}
+    <p>Each test uses 9,999 seeded permutations and the (1 + exceedances)/(9,999 + 1) correction. Bands are half-open at 250 m boundaries, with 1,500 m included. The nearest band contains ${cell05Data.counts[0]} rated restaurants and group sizes are unequal. Ratings may be spatially dependent, potentially undermining the exchangeability assumption and p-values. The test does not establish causation, food quality, or a precise distance threshold.</p></div>`);
+};
+cell05Worker.postMessage(cell05Groups);

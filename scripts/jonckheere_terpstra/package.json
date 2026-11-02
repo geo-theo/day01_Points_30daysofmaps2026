@@ -1,0 +1,1 @@
+{"type":"module","scripts":{"test":"node test_jonckheere.js","analyze":"node run_jonckheere.js","build-cell":"node build_cell.js"}}

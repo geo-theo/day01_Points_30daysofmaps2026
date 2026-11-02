@@ -1,11 +1,14 @@
-// Match this filename to the attachment in your notebook.
+// Cell 02 — paste this entire file into one Observable JavaScript or TypeScript cell.
+// Attach restaurants_paris.geojson to the notebook before running it.
+import * as cell02Plot from "npm:@observablehq/plot";
+import * as cell02Htl from "npm:htl";
+
 const restaurants = await FileAttachment("restaurants_paris.geojson").json();
 
 const ratingColors = {
   type: "linear",
-  // Smooth transitions through the centers of the requested rating bands.
   domain: [1, 1.5, 2.5, 3.5, 4.5, 5],
-  range: ["#ff2020", "#ff2020", "#f6a09a", "#a6cee3", "#08306b", "#08306b"],
+  range: ["#a50026", "#a50026", "#f6a09a", "#a6cee3", "#08306b", "#08306b"],
   interpolate: "rgb",
   clamp: true,
   label: "Average rating (out of 5)"
@@ -13,7 +16,7 @@ const ratingColors = {
 
 const restaurantMap = (() => {
   const mapWidth = Math.max(240, Math.min(width, 1100));
-  const pointRadius = 1.6; // Increase for larger dots.
+  const pointRadius = 1.6;
   const noRatingColor = "#d1d5db";
 
   const points = restaurants.features
@@ -24,43 +27,44 @@ const restaurantMap = (() => {
       x: d.geometry.coordinates[0],
       y: d.geometry.coordinates[1],
       name: d.properties?.restaurant_name ?? "Unnamed restaurant",
-      // Do not coerce null to zero: missing ratings are not low ratings.
-      rating: Number.isFinite(d.properties?.avg_rating)
-        && d.properties.avg_rating >= 1 && d.properties.avg_rating <= 5
-        ? d.properties.avg_rating : null
+      // Missing ratings are not low ratings.
+      rating: Number.isFinite(d.properties?.rating)
+        && d.properties.rating >= 1 && d.properties.rating <= 5
+        ? d.properties.rating : null
     }));
 
   if (!points.length) throw new Error("No valid Point geometries found.");
 
-  const rated = points.filter(d => d.rating !== null);
+  // SVG draws later points on top: highest ratings first, lowest ratings last.
+  const rated = points.filter(d => d.rating !== null)
+    .sort ( (a, b) => b.rating - a.rating );
   const unrated = points.filter(d => d.rating === null);
   const domain = {
     type: "MultiPoint",
     coordinates: points.map(d => [d.x, d.y])
   };
 
-  const map = Plot.plot({
+  const map = cell02Plot.plot({
     width: mapWidth,
     height: Math.round(mapWidth * 0.83),
     margin: 12,
-    // This file is already projected in meters (EPSG:2154 / Lambert-93).
-    // Preserve its shape and flip the screen y direction so north is up.
+    // The coordinates are in EPSG:2154 (Lambert-93); north is up.
     projection: {type: "reflect-y", domain},
     color: ratingColors,
     style: {background: "white", color: "#111827"},
     marks: [
-      Plot.dot(unrated, {
+      cell02Plot.dot(unrated, {
         x: "x", y: "y", r: pointRadius, fill: noRatingColor,
         title: d => `${d.name}\nNo rating`
       }),
-      Plot.dot(rated, {
+      cell02Plot.dot(rated, {
         x: "x", y: "y", r: pointRadius, fill: "rating",
         title: d => `${d.name}\nAverage rating: ${d.rating.toFixed(1)} / 5`
       })
     ]
   });
 
-  const legend = Plot.legend({
+  const legend = cell02Plot.legend({
     color: ratingColors,
     width: Math.min(mapWidth, 460),
     height: 52,
@@ -71,7 +75,7 @@ const restaurantMap = (() => {
     style: {background: "white", color: "#111827"}
   });
 
-  return htl.html`<figure style=${{
+  return cell02Htl.html`<figure style=${{
     margin: "0",
     padding: "20px 0 0",
     width: `${mapWidth}px`,
@@ -84,7 +88,7 @@ const restaurantMap = (() => {
       Average TripAdvisor Restaurant Ratings in Paris
     </h2>
     ${legend}
-    ${unrated.length ? htl.html`<div style="margin: 0 8px 10px; font-size: 11px; color: #59616d;">
+    ${unrated.length ? cell02Htl.html`<div style="margin: 0 8px 10px; font-size: 11px; color: #59616d;">
       <span style=${{display: "inline-block", width: "7px", height: "7px",
         borderRadius: "50%", background: noRatingColor, marginRight: "5px"}}></span>
       No rating
