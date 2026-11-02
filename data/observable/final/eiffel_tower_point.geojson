@@ -1,0 +1,8 @@
+{
+"type": "FeatureCollection",
+"name": "eiffel_tower_point",
+"crs": { "type": "name", "properties": { "name": "urn:ogc:def:crs:EPSG::2154" } },
+"features": [
+{"type":"Feature","properties":{"latitude":48.85819,"longitude":2.29451},"geometry":{"type":"Point","coordinates":[648237.82660541171208,6862248.32494175247848]}}
+]
+}
