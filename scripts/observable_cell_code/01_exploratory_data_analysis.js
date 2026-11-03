@@ -48,7 +48,7 @@ const parisSummary = summaryColumns.map((column) => {
 });
 
 // Feature properties form the table; the original geometry remains in parisGeoJSON.
-display(Inputs.table(parisRestaurants, {label: "Paris restaurants"}));
+display(htl.html`<div style="max-width: 100%; max-height: 320px; overflow: auto;"><div style="min-width: 1200px;">${Inputs.table(parisRestaurants, {label: "Paris restaurants", rows: 6})}</div></div>`);
 display(htl.html`<p style="margin-top: 0.25rem; color: #666; font-size: 0.875rem;">Total records: ${parisRestaurants.length.toLocaleString()}</p>`);
 display(Plot.plot({
   title: "Distribution of restaurant ratings",
@@ -66,5 +66,5 @@ display(Plot.plot({
     Plot.ruleX([2, 3, 4], {stroke: "#333", strokeOpacity: 0.45, strokeDasharray: "2,4"})
   ]
 }));
-display(Inputs.table(parisSummary, {label: "Summary statistics"}));
+display(htl.html`<div style="max-width: 100%; max-height: 320px; overflow: auto;"><div style="min-width: 900px;">${Inputs.table(parisSummary, {label: "Summary statistics", rows: 6})}</div></div>`);
 

@@ -377,7 +377,7 @@ const cell00OpeningGamCurve = (fit, min, max) => cell00OpeningGamGrid.filter(dis
   .map(distance => ({distance, predicted: fit.predict(distance)}));
 
 const cell00OpeningGamOriginalWidth = Math.min(290, Math.max(170, Math.round(cell00OpeningMapWidth * 0.35)), cell00OpeningMapWidth - 24);
-const cell00OpeningGamWidth = Math.round(1.25 * Math.round(cell00OpeningGamOriginalWidth / 2));
+const cell00OpeningGamWidth = Math.round(0.8 * Math.round(1.25 * Math.round(cell00OpeningGamOriginalWidth / 2)));
 const cell00OpeningGamHeight = Math.round(0.75 * Math.round(1.25 * Math.round(1.5 * Math.round(Math.max(120, Math.round(cell00OpeningGamOriginalWidth * 0.58)) / 2))));
 const cell00OpeningGamPlot = cell00OpeningPlot.plot({
   width: cell00OpeningGamWidth, height: cell00OpeningGamHeight,
@@ -387,6 +387,11 @@ const cell00OpeningGamPlot = cell00OpeningPlot.plot({
   color: cell00OpeningRatingScale,
   style: {background: "transparent", color: "#303940", fontFamily: cell00OpeningFont, fontSize: "8.75px"},
   marks: [
+    // The zero-distance guide follows the editable Eiffel Tower basemap color.
+    cell00OpeningPlot.ruleX([0], {
+      stroke: cell00OpeningBasemapColors["Tour Eiffel"], strokeWidth: 1.2,
+      strokeDasharray: "1,3", strokeLinecap: "round"
+    }),
     cell00OpeningPlot.ruleX(cell00OpeningBands.filter(b => b.median !== null), {
       x: "radius", stroke: "median", strokeWidth: 1,
       strokeDasharray: `${cell00OpeningRingDashLength},${cell00OpeningRingDashGap}`,
@@ -406,11 +411,6 @@ const cell00OpeningGamPlot = cell00OpeningPlot.plot({
     })] : []),
     cell00OpeningPlot.line(cell00OpeningGamCurve(cell00OpeningGamPrimary, cell00OpeningGamMin, cell00OpeningGamMax), {
       x: "distance", y: "predicted", stroke: "#aa91d0", strokeWidth: 2.5, clip: true
-    }),
-    // Mark the Eiffel Tower at the zero-distance end of the horizontal axis.
-    cell00OpeningPlot.dot([{distance: 0, rating: 1}], {
-      x: "distance", y: "rating", symbol: "triangle", r: 3, dy: -4,
-      fill: cell00OpeningBasemapColors["Tour Eiffel"], stroke: "none"
     })
   ]
 });

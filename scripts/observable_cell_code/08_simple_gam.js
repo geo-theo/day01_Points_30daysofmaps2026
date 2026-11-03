@@ -2,6 +2,7 @@
 // Attach restaurants_paris.geojson to the notebook before running it.
 import * as cell08Plot from "npm:@observablehq/plot";
 import * as cell08Inputs from "npm:@observablehq/inputs";
+import {html as cell08Html} from "npm:htl";
 
 // Keep restaurants with an observed rating and distance within 1,500 m.
 const cell08GeoJSON = await FileAttachment("restaurants_paris.geojson").json();
@@ -133,8 +134,8 @@ const cell08Results = [
   {metric: "Smoothing penalty (λ)", value: cell08Gam.lambda}
 ];
 const cell08Format = value => value == null ? "—" : Number.isInteger(value) ? value.toLocaleString() : value.toFixed(4);
-display(cell08Inputs.table(cell08Results, {rows: cell08Results.length,
-  header: {metric: "GAM metric", value: "Value"}, format: {value: cell08Format}}));
+display(cell08Html`<div style="max-width: 100%; max-height: 320px; overflow: auto;"><div style="min-width: 650px;">${cell08Inputs.table(cell08Results, {rows: 6,
+  header: {metric: "GAM metric", value: "Value"}, format: {value: cell08Format}})}</div></div>`);
 display(cell08Plot.plot({
   title: "Restaurant ratings versus distance from the Eiffel Tower",
   width: 900, height: 500,

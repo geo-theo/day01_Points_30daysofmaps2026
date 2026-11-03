@@ -157,12 +157,12 @@ const cell10Map = cell10Plot.plot({
       title: f => `${f.properties.lower}–${f.properties.radius} m band\nNo rated restaurants`
     }),
     cell10Plot.dot(cell10Points.filter(p => p.rating === null), {
-      x: "x", y: "y", r: 3 * 96 / 72, fill: cell10MissingRatingColor, stroke: "none",
+      x: "x", y: "y", r: 3 * 96 / 72, fill: cell10MissingRatingColor, stroke: "white", strokeWidth: 0.7,
       title: p => `${p.name}\nNo rating\nDistance: ${Math.round(p.distance)} m`
     }),
     // SVG paints later points on top: draw high-rated blue before low-rated red.
     cell10Plot.dot(cell10Points.filter(p => p.rating !== null).sort((a, b) => b.rating - a.rating), {
-      x: "x", y: "y", r: 3 * 96 / 72, fill: "rating", stroke: "none",
+      x: "x", y: "y", r: 3 * 96 / 72, fill: "rating", stroke: "white", strokeWidth: 0.7,
       title: p => `${p.name}\nRating: ${p.rating.toFixed(2)} / 5\nDistance: ${Math.round(p.distance)} m`
     }),
     // Labels and outlines use the same band median and shared rating scale.
@@ -177,6 +177,11 @@ const cell10Map = cell10Plot.plot({
       title: d => `${d.lower}–${d.radius} m band\nNo rated restaurants`
     })
   ]
+});
+
+// Apply the shadow to each main-map circle individually, preserving point draw order.
+cell10Map.querySelectorAll("circle").forEach(circle => {
+  circle.style.filter = "drop-shadow(1px 1px 0.7px rgba(0,0,0,0.4))";
 });
 
 // Measure 500 projected metres in SVG pixels so the bar stays correct when resized.
@@ -377,7 +382,7 @@ const cell10GamCurve = (fit, min, max) => cell10GamGrid.filter(distance => dista
   .map(distance => ({distance, predicted: fit.predict(distance)}));
 
 const cell10GamOriginalWidth = Math.min(290, Math.max(170, Math.round(cell10MapWidth * 0.35)), cell10MapWidth - 24);
-const cell10GamWidth = Math.round(1.25 * Math.round(cell10GamOriginalWidth / 2));
+const cell10GamWidth = Math.round(0.8 * Math.round(1.25 * Math.round(cell10GamOriginalWidth / 2)));
 const cell10GamHeight = Math.round(0.75 * Math.round(1.25 * Math.round(1.5 * Math.round(Math.max(120, Math.round(cell10GamOriginalWidth * 0.58)) / 2))));
 const cell10GamPlot = cell10Plot.plot({
   width: cell10GamWidth, height: cell10GamHeight,
@@ -387,6 +392,11 @@ const cell10GamPlot = cell10Plot.plot({
   color: cell10RatingScale,
   style: {background: "transparent", color: "#303940", fontFamily: cell10Font, fontSize: "8.75px"},
   marks: [
+    // The zero-distance guide follows the editable Eiffel Tower basemap color.
+    cell10Plot.ruleX([0], {
+      stroke: cell10BasemapColors["Tour Eiffel"], strokeWidth: 1.2,
+      strokeDasharray: "1,3", strokeLinecap: "round"
+    }),
     cell10Plot.ruleX(cell10Bands.filter(b => b.median !== null), {
       x: "radius", stroke: "median", strokeWidth: 1,
       strokeDasharray: `${cell10RingDashLength},${cell10RingDashGap}`,
@@ -406,11 +416,6 @@ const cell10GamPlot = cell10Plot.plot({
     })] : []),
     cell10Plot.line(cell10GamCurve(cell10GamPrimary, cell10GamMin, cell10GamMax), {
       x: "distance", y: "predicted", stroke: "#aa91d0", strokeWidth: 2.5, clip: true
-    }),
-    // Mark the Eiffel Tower at the zero-distance end of the horizontal axis.
-    cell10Plot.dot([{distance: 0, rating: 1}], {
-      x: "distance", y: "rating", symbol: "triangle", r: 3, dy: -4,
-      fill: cell10BasemapColors["Tour Eiffel"], stroke: "none"
     })
   ]
 });

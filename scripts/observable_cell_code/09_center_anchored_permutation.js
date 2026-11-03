@@ -149,17 +149,17 @@ display(cell09Plot.plot({
     cell09Plot.ruleX([250, 500, 750, 1000, 1250, 1500], {stroke: "#999", strokeDasharray: "1,4", strokeLinecap: "round"}),
     cell09Plot.line(cell09Rows, {x: "radius", y: "observed_difference", stroke: () => "Observed difference", strokeWidth: 2.5}),
     cell09Plot.line(cell09Rows, {x: "radius", y: "upper_envelope", stroke: () => "Simultaneous upper envelope", strokeWidth: 2}),
-    cell09Plot.dot(cell09Rows.filter(d => d.significant), {x: "radius", y: "observed_difference", fill: () => "Above envelope", symbol: "times", r: 5,
+    cell09Plot.dot(cell09Rows.filter(d => d.significant), {x: "radius", y: "observed_difference", stroke: () => "Above envelope", strokeWidth: 2, symbol: "times", r: 5,
       title: d => `${d.radius} m: difference ${d.observed_difference.toFixed(3)}`})
   ]
 }));
 
 // CELL 09.5 — Results table. Paste this section into a fifth cell.
 const cell09Number = value => value == null ? "—" : value.toFixed(3);
-display(cell09Inputs.table(cell09Rows, {
-  rows: cell09Rows.length,
+display(cell09Html`<div style="max-width: 100%; max-height: 320px; overflow: auto;"><div style="min-width: 1000px;">${cell09Inputs.table(cell09Rows, {
+  rows: 6,
   columns: ["radius", "n_inside", "n_outside", "mean_inside", "mean_outside", "observed_difference", "significant"],
   header: {radius: "Radius (m)", n_inside: "N inside", n_outside: "N outside", mean_inside: "Mean inside", mean_outside: "Mean outside", observed_difference: "Difference", significant: "Significant?"},
   format: {mean_inside: cell09Number, mean_outside: cell09Number, observed_difference: cell09Number, significant: d => d ? "Yes" : "No"}
-}));
+})}</div></div>`);
 
